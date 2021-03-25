@@ -20,7 +20,7 @@ int main(int argc, char **argv)
     {
         int Length = strlen(argv[i]);
         WriteConsole(hConsole, argv[i], Length, 0, 0);
-        if(i + 1 < argc) {
+        if (i + 1 < argc) {
             WriteConsole(hConsole, " ", 1, 0, 0);
         }
     }
