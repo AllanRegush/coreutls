@@ -19,6 +19,6 @@ int main(void)
     uptime %= MINUTESINMILLISECONDS;
     uint32_t seconds = uptime / SECONDSINMILLISECONDS;
     uptime %= SECONDSINMILLISECONDS;
-    printf("Days: %d, Hours: %d, Seconds: %d", days, hours, seconds);
+    printf("Days: %d, Hours: %d, Minutes: %d, Seconds: %d", days, hours, minutes,  seconds);
     return 0;
 }
