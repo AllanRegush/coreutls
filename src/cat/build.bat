@@ -22,4 +22,6 @@ mkdir ..\build
 pushd ..\build
 echo $pwd
 cl %compiler_settings% ..\cat\cat.cpp
+del *.obj > NUL 2 > NUL
 popd
+
