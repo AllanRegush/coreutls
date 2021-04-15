@@ -6,7 +6,7 @@ int main(int argc, char **argv)
     if (argc != 2)
     {
         HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-        WriteConsole(hConsole, "NEEDS AN ARG", 12, 0,0);
+        WriteConsole(hConsole, "Usage: touch <file>", 19, 0,0);
         return 1;
     }
     
