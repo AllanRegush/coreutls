@@ -2,7 +2,7 @@
 #include <windows.h>
 
 #pragma function(strlen)
-int 
+inline int 
 strlen(char *str)
 {
     int count = 0;
