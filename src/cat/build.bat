@@ -18,10 +18,12 @@ set compiler_warnings= -W4
 
 set compiler_settings= %compiler_flags% %compiler_warnings%
 
+set linker_settings= -link -nodefaultlib -subsystem:console kernel32.lib
+
 mkdir ..\build
 pushd ..\build
 echo $pwd
-cl %compiler_settings% ..\cat\cat.cpp
+cl %compiler_settings% ..\cat\cat.cpp %linker_settings%
 del *.obj > NUL 2 > NUL
 popd
 
