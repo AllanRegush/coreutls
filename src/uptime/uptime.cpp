@@ -1,6 +1,5 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-#include <stdio.h>
 #include <stdint.h>
 
 #define DAYSINMILLISECONDS 86400000
@@ -8,7 +7,24 @@
 #define MINUTESINMILLISECONDS 60000
 #define SECONDSINMILLISECONDS 1000
 
-int main(void)
+static void
+Writef(const char *Format, ...)
+{
+    char Buffer[1028];
+    
+    va_list Args;
+    va_start(Args, Format);
+    uint32_t Length = wvsprintf(Buffer, Format, Args);
+    va_end(Args);
+    
+    DWORD UnWritable;
+    WriteFile(GetStdHandle(STD_OUTPUT_HANDLE),
+              Buffer, Length, &UnWritable, 0);
+}
+
+
+void __cdecl
+mainCRTStartup(void)
 {
     uint64_t uptime = GetTickCount64();
     uint32_t days = uptime / DAYSINMILLISECONDS;
@@ -19,6 +35,6 @@ int main(void)
     uptime %= MINUTESINMILLISECONDS;
     uint32_t seconds = uptime / SECONDSINMILLISECONDS;
     uptime %= SECONDSINMILLISECONDS;
-    printf("Days: %d, Hours: %d, Minutes: %d, Seconds: %d", days, hours, minutes,  seconds);
-    return 0;
+    Writef("Days: %d, Hours: %d, Minutes: %d, Seconds: %d", days, hours, minutes,  seconds);
+    ExitProcess(0);
 }

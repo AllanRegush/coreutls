@@ -1,7 +1,9 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
-int strlen(char *str)
+#pragma function(strlen)
+inline int 
+strlen(char *str)
 {
     int count = 0;
     
@@ -19,7 +21,8 @@ int strlen(char *str)
 }
 
 
-int main(int, char)
+void __cdecl
+mainCRTStartup(void)
 {
     TCHAR NPath[MAX_PATH];
     GetCurrentDirectory(MAX_PATH, NPath);
@@ -27,5 +30,5 @@ int main(int, char)
     WriteConsole(hConsole, NPath, strlen(NPath), 0, 0);
     CloseHandle(hConsole);
     
-    return 0;
+    ExitProcess(0);
 }

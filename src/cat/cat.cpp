@@ -1,9 +1,8 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
-
 inline
-int strlen(char* str)
+int StringLength(char* str)
 {
     int count = 0;
     
@@ -15,25 +14,55 @@ int strlen(char* str)
     return count;
 }
 
+inline 
+char **CommandLineToArgvA(LPSTR Args,int *ArgCount)
+{
+    char **Strings;
+    int Length = 0;
+    char *word_ptr = Args;
+    for(char *char_ptr = Args; *char_ptr != '\0'; char_ptr++)
+    {
+        if (*char_ptr == ' ')
+        {
+            ++*ArgCount;
+        }
+    }
+    
+    Strings = VirtualAlloc(0, ArgCount * sizeof(*Strings), 
+                           MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+    
+    
+    return Strings;
+}
+
 inline
 void Write(const char *Message, int Length)
 {
-    const HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-    WriteConsole(hConsole, Message, Length, 0, 0);
-    CloseHandle(hConsole);
+    DWORD Ignored;
+    WriteFile(GetStdHandle(STD_OUTPUT_HANDLE), Message, Length, &Ignored, 0);
 }
 
-int main(int argc, char **argv)
+void __cdecl 
+mainCRTStartup(void)
 {
-    if(argc != 2)
+    int ArgCount = 0;
+    LPSTR Args = GetCommandLineA();
+    int ArgsLength = StringLength(Args);
+    Write(Args, ArgsLength + 1);
+    char **Arguments = CommandLineToArgvA(GetCommandLineA(), &ArgCount);
+    if(ArgCount != 2)
     {
-        const char* Message = "Usage: cat.exe <file>";
-        const int Length = strlen(Message);
+        char* Message = "Usage: cat.exe <file>";
+        const int Length = StringLength(Message);
         Write(Message, Length);
-        return 1;
+        ExitProcess(0);
     }
     
-    HANDLE hFile = CreateFileA(argv[1],
+    int y = *(int *)0x0000;
+    
+    y++;
+    
+    HANDLE hFile = CreateFileA(&Args[1],
                                GENERIC_READ,
                                FILE_SHARE_READ,
                                0,
@@ -51,7 +80,7 @@ int main(int argc, char **argv)
     {
         // TODO: Log Here
         CloseHandle(hFile);
-        return 2;
+        //return 2;
     }
     
     void *buffer = VirtualAlloc(0, (int) lFileSize.QuadPart, 
@@ -69,12 +98,13 @@ int main(int argc, char **argv)
     {
         // TODO: Log here
         CloseHandle(hFile);
-        return 2;
+        //return 2;
     }
     
     CloseHandle(hFile);
     
     Write((char *)buffer, bytesWritten);
     
-    return 0;
+    //return 0;
 }
+
