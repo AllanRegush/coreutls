@@ -1,7 +1,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
-inline
+inline static
 int StringLength(char* str)
 {
     int count = 0;
@@ -14,97 +14,152 @@ int StringLength(char* str)
     return count;
 }
 
-inline 
-char **CommandLineToArgvA(LPSTR Args,int *ArgCount)
+
+inline static 
+void StringCopy(char *Dest, char *Src, int Size)
 {
-    char **Strings;
-    int Length = 0;
-    char *word_ptr = Args;
-    for(char *char_ptr = Args; *char_ptr != '\0'; char_ptr++)
+    for (int I = 0; I < Size; ++I)
     {
-        if (*char_ptr == ' ')
+        Dest[I] = Src[I];
+    }
+}
+
+/*
+ Note(Allan): This is really bad. I should fix this up later on.
+*/
+inline static
+char **CommandLineToArgvA(LPSTR Args, int *ArgCount)
+{
+    char **Strings = 0;
+    
+    for(char *Char = Args; *Char != '\0'; ++Char)
+    {
+        if (*Char  == ' ')
         {
-            ++*ArgCount;
+            while(*Char == ' ' && *Char != '\0') 
+            {
+                ++Char;
+            }
+            char *Peek = Char + 1;
+            if (*Peek != '\0' && *Peek != '\n')
+                ++*ArgCount;
         }
     }
-    
-    Strings = VirtualAlloc(0, ArgCount * sizeof(*Strings), 
-                           MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
-    
-    
+    ++*ArgCount;
+    Strings = (char **)VirtualAlloc(0, *ArgCount * sizeof(char *), 
+                                    MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+    int Length = 0;
+    int Index = 0;
+    char *Start = Args;
+    char *Char = Args;
+    for(;;)
+    {
+        if (*Char == ' ' || *Char == '\0')
+        {
+            Strings[Index] = (char *)VirtualAlloc(0, (Length + 1)* sizeof(char),
+                                                  MEM_COMMIT | MEM_RESERVE, 
+                                                  PAGE_READWRITE);
+            StringCopy(Strings[Index], Start, Length);
+            Strings[Index][Length] = 0;
+            
+            Length = 0;
+            ++Index;
+            if (*Char == ' ')
+            {
+                while (*Char == ' ')
+                {
+                    ++Char;
+                }
+                Start = Char;
+                continue;
+            }
+            else
+            {
+                break;
+            }
+        }
+        ++Length;
+        ++Char;
+    }
     return Strings;
 }
 
-inline
+inline static 
 void Write(const char *Message, int Length)
 {
-    DWORD Ignored;
-    WriteFile(GetStdHandle(STD_OUTPUT_HANDLE), Message, Length, &Ignored, 0);
+    DWORD Written;
+    WriteFile(GetStdHandle(STD_OUTPUT_HANDLE), Message, Length, &Written, 0);
+}
+
+inline static
+void Writef(const char *Format, ...)
+{
+    char Buffer[1028];
+    va_list Args;
+    va_start(Args, Format);
+    unsigned int Length = wvsprintf(Buffer, Format, Args);
+    va_end(Args);
+    DWORD Written;
+    WriteFile(GetStdHandle(STD_OUTPUT_HANDLE),
+              Buffer, Length, &Written, 0);
 }
 
 void __cdecl 
 mainCRTStartup(void)
 {
     int ArgCount = 0;
-    LPSTR Args = GetCommandLineA();
-    int ArgsLength = StringLength(Args);
-    Write(Args, ArgsLength + 1);
     char **Arguments = CommandLineToArgvA(GetCommandLineA(), &ArgCount);
     if(ArgCount != 2)
     {
         char* Message = "Usage: cat.exe <file>";
-        const int Length = StringLength(Message);
+        int Length = StringLength(Message);
         Write(Message, Length);
         ExitProcess(0);
-    }
+    } 
     
-    int y = *(int *)0x0000;
+    HANDLE File = CreateFileA(Arguments[1],
+                              GENERIC_READ,
+                              FILE_SHARE_READ,
+                              0,
+                              OPEN_EXISTING,
+                              FILE_ATTRIBUTE_NORMAL,
+                              0);
     
-    y++;
-    
-    HANDLE hFile = CreateFileA(&Args[1],
-                               GENERIC_READ,
-                               FILE_SHARE_READ,
-                               0,
-                               OPEN_EXISTING,
-                               FILE_ATTRIBUTE_NORMAL,
-                               0);
-    
-    if (hFile == INVALID_HANDLE_VALUE)
+    if (File == INVALID_HANDLE_VALUE)
     {
         // TODO: Log here
     }
     
-    LARGE_INTEGER lFileSize;
-    if (! GetFileSizeEx(hFile, &lFileSize))
+    LARGE_INTEGER FileSize;
+    if (! GetFileSizeEx(File, &FileSize))
     {
         // TODO: Log Here
-        CloseHandle(hFile);
-        //return 2;
+        CloseHandle(File);
+        ExitProcess(2);
     }
     
-    void *buffer = VirtualAlloc(0, (int) lFileSize.QuadPart, 
-                                MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+    void *FileBuffer = VirtualAlloc(0, (int) FileSize.QuadPart, 
+                                    MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
     
-    if(!buffer)
+    if(!FileBuffer)
     {
         // TODO: Log or Assert.
     }
-    DWORD bytesWritten;
-    if (! ReadFile(hFile,
-                   buffer,
-                   (DWORD) lFileSize.QuadPart,
-                   &bytesWritten, 0))
+    DWORD Written;
+    if (! ReadFile(File,
+                   FileBuffer,
+                   (DWORD) FileSize.QuadPart,
+                   &Written, 0))
     {
         // TODO: Log here
-        CloseHandle(hFile);
-        //return 2;
+        CloseHandle(File);
+        ExitProcess(2);
     }
     
-    CloseHandle(hFile);
+    CloseHandle(File);
     
-    Write((char *)buffer, bytesWritten);
+    Write((char *)FileBuffer, Written);
     
-    //return 0;
+    ExitProcess(0);
 }
 
